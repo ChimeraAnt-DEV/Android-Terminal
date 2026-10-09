@@ -94,6 +94,10 @@ android {
         buildConfig = true
     }
 
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
     packaging {
         jniLibs {
             useLegacyPackaging = false
@@ -108,4 +112,6 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.preference:preference:1.2.1")
+
+    testImplementation("junit:junit:4.13.2")
 }

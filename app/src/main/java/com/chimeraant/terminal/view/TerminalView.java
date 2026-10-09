@@ -415,11 +415,15 @@ public class TerminalView extends View {
             float top = getPaddingTop() + screenRow * cellHeight;
             if (line == null) continue;
 
+            // A line captured at a different width can still be shorter than
+            // the current column count; never index past its end.
+            final int lineLen = Math.min(line.chars.length, line.styles.length);
+
             // Background pass: coalesce adjacent cells that share a background.
             int runStart = 0;
             int runBg = Integer.MIN_VALUE;
             for (int col = 0; col <= cols; col++) {
-                int bg = col < cols ? cellBackground(line, col) : Integer.MIN_VALUE + 1;
+                int bg = col < lineLen ? cellBackground(line, col) : Integer.MIN_VALUE + 1;
                 if (col == 0) {
                     runStart = 0;
                     runBg = bg;
@@ -437,6 +441,10 @@ public class TerminalView extends View {
             // Glyph pass.
             float x = getPaddingLeft();
             for (int col = 0; col < cols; col++) {
+                if (col >= lineLen) {
+                    x = getPaddingLeft() + (col + 1) * cellWidth;
+                    continue;
+                }
                 int ch = line.chars[col];
                 long style = line.styles[col];
                 if (ch != 0 && ch != 0x200B) {

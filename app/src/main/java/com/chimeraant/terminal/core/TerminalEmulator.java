@@ -149,11 +149,54 @@ public class TerminalEmulator {
             }
         }
 
+        // Scrollback and alternate-screen lines keep the width they were
+        // captured at. Re-normalise them to the new column count: a later,
+        // wider layout would otherwise index past the end of a stored line.
+        if (oldCols != this.cols) {
+            normaliseScrollbackWidth();
+            normaliseAltScreenWidth();
+        }
+
         cursorRow = Math.min(cursorRow, this.rows - 1);
         cursorCol = Math.min(cursorCol, this.cols - 1);
         scrollTop = 0;
         scrollBottom = this.rows - 1;
         pendingWrap = false;
+    }
+
+    private void normaliseScrollbackWidth() {
+        if (scrollback.isEmpty()) return;
+        ArrayDeque<ScreenLine> resized = new ArrayDeque<>(scrollback.size());
+        for (ScreenLine line : scrollback) {
+            resized.addLast(reflowLine(line));
+        }
+        scrollback.clear();
+        scrollback.addAll(resized);
+    }
+
+    private void normaliseAltScreenWidth() {
+        if (altChars == null) return;
+        for (int r = 0; r < altChars.length; r++) {
+            if (altChars[r] != null) {
+                altChars[r] = reflowLine(altChars[r]);
+            }
+        }
+    }
+
+    /** Copy a line into arrays sized for the current column count. */
+    private ScreenLine reflowLine(ScreenLine line) {
+        if (line.chars.length == cols && line.styles.length == cols) {
+            return line;
+        }
+        int[] c = new int[cols];
+        long[] s = new long[cols];
+        int n = Math.min(line.chars.length, cols);
+        System.arraycopy(line.chars, 0, c, 0, n);
+        System.arraycopy(line.styles, 0, s, 0, Math.min(line.styles.length, cols));
+        for (int i = n; i < cols; i++) {
+            s[i] = DEFAULT_STYLE;
+        }
+        return new ScreenLine(c, s);
     }
 
     private void clearAll() {

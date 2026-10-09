@@ -121,6 +121,9 @@ jobs:
             echo "keyPassword=${KEYPASS}"
           } > keystore.properties
 
+      - name: Run unit tests
+        run: ./gradlew --no-daemon :app:testArm64ReleaseUnitTest
+
       - name: Build 64-bit release APK
         run: ./gradlew --no-daemon :app:assembleArm64Release
 
