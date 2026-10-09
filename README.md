@@ -73,14 +73,46 @@ Requirements: JDK 17+ (JDK 21 works), Android SDK platform 34, build-tools
 34.0.0, NDK `27.0.12077973`, CMake `3.22.1`.
 
 ```bash
-# one-time: point Gradle at your SDK
+# one-time: point Gradle at your SDK (git-ignored; CI uses ANDROID_HOME)
 echo "sdk.dir=/path/to/android-sdk" > local.properties
 
-./gradlew :app:assembleDebug    # debug APK
-./gradlew :app:assembleRelease  # release APK
+# 64-bit APK (arm64-v8a, plus x86_64 so it also runs on emulators)
+./gradlew :app:assembleArm64Release
+# 32-bit APK (armeabi-v7a)
+./gradlew :app:assembleArm32Release
 ```
 
-Output: `app/build/outputs/apk/debug/app-debug.apk`.
+Outputs:
+
+```
+app/build/outputs/apk/arm64/release/app-arm64-release.apk   # 64-bit
+app/build/outputs/apk/arm32/release/app-arm32-release.apk   # 32-bit
+```
+
+Two separate APKs are produced on purpose: each one bundles only the native
+libraries for its own architecture, so neither carries dead code for the other.
+
+### CI (GitHub Actions)
+
+`.github/workflows/build.yml` builds both APKs on every push to `main`, on any
+`v*` tag, on pull requests and on manual dispatch. It then:
+
+* uploads them as a workflow artifact, and
+* attaches them to a **GitHub Release as raw `.apk` files** — `ChimeraTerminal-<version>-arm64-v8a.apk`
+  and `ChimeraTerminal-<version>-armeabi-v7a.apk`. Release assets download as
+  plain APKs; GitHub's own workflow artifacts are always repackaged as `.zip`,
+  so the Release is the place to grab an installable file.
+
+On an untagged push the version is derived from the commit as
+`v1.0.0-<short-sha>`. CI signs with a throwaway key unless you add these
+repository secrets, which keep update signatures stable:
+
+| Secret | Purpose |
+| --- | --- |
+| `RELEASE_KEYSTORE_BASE64` | `base64 -w0 release.jks` |
+| `RELEASE_KEYSTORE_PASSWORD` | keystore password |
+| `RELEASE_KEY_ALIAS` | key alias |
+| `RELEASE_KEY_PASSWORD` | key password |
 
 ### Optional release signing
 Create `keystore.properties` in the repository root (git-ignored):

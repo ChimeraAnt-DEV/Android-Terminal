@@ -27,9 +27,26 @@ android {
                 arguments += listOf("-DANDROID_STL=c++_static")
             }
         }
+    }
 
-        ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+    // Two separate APKs: one for 64-bit devices, one for 32-bit devices.
+    // Each variant ships only the native libraries it needs, so neither APK
+    // carries dead code for the other architecture.
+    flavorDimensions += "abi"
+    productFlavors {
+        create("arm64") {
+            dimension = "abi"
+            versionNameSuffix = "-arm64"
+            ndk {
+                abiFilters += listOf("arm64-v8a", "x86_64")
+            }
+        }
+        create("arm32") {
+            dimension = "abi"
+            versionNameSuffix = "-arm32"
+            ndk {
+                abiFilters += listOf("armeabi-v7a")
+            }
         }
     }
 

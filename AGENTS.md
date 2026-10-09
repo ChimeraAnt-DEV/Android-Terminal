@@ -12,9 +12,14 @@ command-line tools, then:
 
 ```bash
 source ~/.android-env.sh            # ANDROID_HOME/JAVA_HOME convenience
-gradle --no-daemon :app:assembleDebug
-gradle --no-daemon :app:assembleRelease
+./gradlew :app:assembleArm64Release   # 64-bit APK (arm64-v8a + x86_64)
+./gradlew :app:assembleArm32Release   # 32-bit APK (armeabi-v7a)
 ```
+
+The `abi` flavor dimension (`arm64`, `arm32`) is how the two APKs are produced;
+keep `defaultConfig` free of `abiFilters` and set filters on the flavors only.
+CI (`.github/workflows/build.yml`) builds both and publishes them as raw `.apk`
+Release assets.
 
 Toolchain versions are pinned in `app/build.gradle.kts`:
 * AGP 8.5.2, Gradle 8.10.2, JDK 17+ (JDK 21 verified)
