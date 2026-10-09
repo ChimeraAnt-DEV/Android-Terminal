@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:id="@+id/drawer_sessions_group" android:checkableBehavior="single" />
+    <item
+        android:id="@+id/drawer_new_session"
+        android:title="@string/menu_new_session" />
+    <item
+        android:id="@+id/drawer_settings"
+        android:title="@string/menu_settings" />
+    <item
+        android:id="@+id/drawer_root"
+        android:title="@string/menu_root" />
+</menu>

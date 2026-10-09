@@ -1,16 +1,2 @@
-*.iml
-.gradle/
-/local.properties
-/keystore.properties
-/.idea/
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-/app/build/
-local.properties
-*.jks
-*.keystore
-
-# Prebuilt APKs are intentionally tracked for convenience.
+# Logs
+*.log
