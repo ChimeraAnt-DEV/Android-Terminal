@@ -213,13 +213,14 @@ public class TerminalSession {
     }
 
     private void appendError(String message) {
-        emulator.process(("\r\n\u001B[31m" + message + "\u001B[0m\r\n")
-                .getBytes(StandardCharsets.UTF_8), message.length() + 20);
+        byte[] data = ("\r\n\u001B[31m" + message + "\u001B[0m\r\n").getBytes(StandardCharsets.UTF_8);
+        emulator.process(data, data.length);
     }
 
     private void appendDisconnectedNotice() {
-        String notice = "\r\n\u001B[90m[process exited with code " + exitCode + "]\u001B[0m\r\n";
-        emulator.process(notice.getBytes(StandardCharsets.UTF_8), notice.length());
+        byte[] notice = ("\r\n\u001B[90m[process exited with code " + exitCode + "]\u001B[0m\r\n")
+                .getBytes(StandardCharsets.UTF_8);
+        emulator.process(notice, notice.length);
         postChanged();
     }
 
