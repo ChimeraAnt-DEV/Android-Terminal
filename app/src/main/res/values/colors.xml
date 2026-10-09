@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="terminal_background">#FF101014</color>
+    <color name="terminal_foreground">#FFDCDCDC</color>
+    <color name="terminal_cursor">#FFA8C88A</color>
+    <color name="surface">#FF16161C</color>
+    <color name="surface_alt">#FF1E1E26</color>
+    <color name="accent">#FFA8C88A</color>
+    <color name="on_surface">#FFEDEDF2</color>
+    <color name="on_surface_muted">#FF9A9AA8</color>
+    <color name="key_background">#FF2C2C36</color>
+    <color name="key_special">#FF3A3A46</color>
+</resources>

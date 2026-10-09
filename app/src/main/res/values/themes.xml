@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.ChimeraTerminal" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">#FF14141A</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="android:colorBackground">@color/terminal_background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="android:statusBarColor">@color/surface</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
+    </style>
+
+    <style name="Theme.ChimeraTerminal.Settings" parent="Theme.ChimeraTerminal">
+        <item name="android:windowBackground">@color/terminal_background</item>
+    </style>
+</resources>
