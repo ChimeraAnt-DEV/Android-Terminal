@@ -1,2 +1,18 @@
-# Logs
+*.iml
+.gradle/
+/local.properties
+local.properties
+/keystore.properties
+keystore.properties
+/.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+/app/build/
+*.jks
+*.keystore
 *.log
+
+# Prebuilt APKs under prebuilt/ are intentionally tracked for convenience.
