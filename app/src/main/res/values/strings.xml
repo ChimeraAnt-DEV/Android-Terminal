@@ -51,4 +51,38 @@
     <string name="notification_channel_desc">Keeps sandbox sessions alive while you are elsewhere.</string>
     <string name="notification_title">Chimera Terminal</string>
     <string name="notification_text">%1$d sandbox(es) running</string>
+
+    <!-- Kitty-style UI -->
+    <string name="tab_new">New tab</string>
+
+    <!-- Termux -->
+    <string name="termux_title">Termux userland</string>
+    <string name="termux_desc">Install the real Termux userland so pkg, apt, bash, git, python, ssh and the rest of the Termux repository work inside a sandbox. Binaries are Android-native and run directly on the device.</string>
+    <string name="termux_install">Install Termux userland</string>
+    <string name="termux_reinstall">Reinstall / repair</string>
+    <string name="termux_installed">Termux userland is installed.</string>
+    <string name="termux_needs_proot">Termux binaries expect the path /data/data/com.termux/files/usr. This app runs them through proot, which binds that path onto the sandbox. Install proot first.</string>
+    <string name="termux_open_sandbox">Open a Termux sandbox</string>
+    <string name="termux_commands_hint">Once installed: pkg update, pkg install git, pkg install python, apt install openssh, and so on.</string>
+
+    <!-- Debloater -->
+    <string name="debloat_title">Debloater</string>
+    <string name="debloat_desc">Disable or remove preinstalled apps without a PC and without touching the system partition. Requires Shizuku (ADB-level) or root.</string>
+    <string name="debloat_scan">Scan installed apps</string>
+    <string name="debloat_backend">Privilege backend</string>
+    <string name="debloat_show_system">Show system apps</string>
+    <string name="debloat_disable">Disable</string>
+    <string name="debloat_uninstall">Uninstall</string>
+    <string name="debloat_restore">Restore</string>
+    <string name="debloat_disabled_list">Restorable packages</string>
+    <string name="debloat_shizuku_setup">Set up Shizuku</string>
+    <string name="debloat_shizuku_help">Shizuku runs an ADB-identity process on the device. On Android 11+ you can start it from the phone itself using Developer options and Wireless debugging - no PC needed. Install Shizuku, start it, then tap Grant.</string>
+    <string name="debloat_grant">Grant Shizuku permission</string>
+    <string name="debloat_blocked">Protected system component - blocked for safety</string>
+    <string name="debloat_no_backend">No ADB-level or root access. Listing works; disabling and removing do not.</string>
+    <string name="debloat_risk_safe">Safe</string>
+    <string name="debloat_risk_caution">Caution</string>
+    <string name="debloat_risk_critical">Protected</string>
+    <string name="debloat_capability_title">What this can and cannot do</string>
+    <string name="debloat_capability_body">With Shizuku or root this removes apps for user 0, exactly like "adb shell pm uninstall --user 0". The system partition is untouched, so the device still boots and OTAs still work, and every action can be restored. Changing kernel driver settings is not possible from an app on a locked device: drivers live in the kernel and SELinux blocks unprivileged access. That is a platform limit, not a missing feature.</string>
 </resources>

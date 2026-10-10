@@ -1,13 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Frosted prompt: a ">_" glyph with icicles hanging from it. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Chevron ">" -->
     <path
-        android:fillColor="#FFA8C88A"
-        android:pathData="M30,40l12,14 -12,14 6,6 18,-20 -18,-20z" />
+        android:pathData="M32,38 L48,54 L32,70 L39,77 L62,54 L39,31 Z"
+        android:fillColor="#FFB8E8FF" />
+
+    <!-- Underscore "_" -->
     <path
-        android:fillColor="#FFEDEDF2"
-        android:pathData="M54,68h26v8H54z" />
+        android:pathData="M58,66 L84,66 L84,74 L58,74 Z"
+        android:fillColor="#FFE6F1F8" />
+
+    <!-- Icicles dripping from the chevron -->
+    <path
+        android:pathData="M36,72 L42,72 L39,84 Z"
+        android:fillColor="#FF9FE0FF" />
+    <path
+        android:pathData="M45,74 L50,74 L47.5,83 Z"
+        android:fillColor="#FF7FD4FF" />
+
+    <!-- Icicles dripping from the underscore -->
+    <path
+        android:pathData="M60,74 L65,74 L62.5,90 Z"
+        android:fillColor="#FFB8E8FF" />
+    <path
+        android:pathData="M69,74 L74,74 L71.5,86 Z"
+        android:fillColor="#FF9FE0FF" />
+    <path
+        android:pathData="M78,74 L83,74 L80.5,82 Z"
+        android:fillColor="#FF7FD4FF" />
+
+    <!-- Small frost specks -->
+    <path
+        android:pathData="M26,30 L29,30 L27.5,35 Z"
+        android:fillColor="#FF7FD4FF" />
+    <path
+        android:pathData="M86,40 L89,40 L87.5,45 Z"
+        android:fillColor="#FF9FE0FF" />
 </vector>

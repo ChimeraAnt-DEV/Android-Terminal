@@ -52,6 +52,27 @@
             android:parentActivityName=".ui.MainActivity"
             android:theme="@style/Theme.ChimeraTerminal.Settings" />
 
+        <activity
+            android:name=".ui.DebloatActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity"
+            android:theme="@style/Theme.ChimeraTerminal.Settings" />
+
+        <activity
+            android:name=".ui.TermuxActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.MainActivity"
+            android:theme="@style/Theme.ChimeraTerminal.Settings" />
+
+        <!-- Required by Shizuku to receive its binder. -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:enabled="true"
+            android:exported="true"
+            android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
         <service
             android:name=".view.ChimeraKeyboard"
             android:exported="true"

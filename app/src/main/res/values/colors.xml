@@ -1,13 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="terminal_background">#FF101014</color>
-    <color name="terminal_foreground">#FFDCDCDC</color>
-    <color name="terminal_cursor">#FFA8C88A</color>
-    <color name="surface">#FF16161C</color>
-    <color name="surface_alt">#FF1E1E26</color>
-    <color name="accent">#FFA8C88A</color>
-    <color name="on_surface">#FFEDEDF2</color>
-    <color name="on_surface_muted">#FF9A9AA8</color>
-    <color name="key_background">#FF2C2C36</color>
-    <color name="key_special">#FF3A3A46</color>
+    <!-- Icy / cyber palette. Cool blues instead of the old green. -->
+    <color name="terminal_background">#FF070B12</color>
+    <color name="terminal_foreground">#FFD8E8F6</color>
+    <color name="terminal_cursor">#FF7FD4FF</color>
+
+    <color name="surface">#FF0D141F</color>
+    <color name="surface_alt">#FF131C2B</color>
+    <color name="surface_raised">#FF1A2434</color>
+
+    <color name="accent">#FF7FD4FF</color>
+    <color name="accent_dim">#FF4A9FD0</color>
+    <color name="accent_glow">#FFB8E8FF</color>
+
+    <color name="on_surface">#FFE6F1F8</color>
+    <color name="on_surface_muted">#FF8FA3B8</color>
+
+    <color name="key_background">#FF1E2A3C</color>
+    <color name="key_special">#FF26344A</color>
+
+    <color name="tab_active">#FF16233A</color>
+    <color name="tab_inactive">#FF0D141F</color>
+    <color name="divider">#FF22304A</color>
+
+    <color name="danger">#FFFF6B6B</color>
+    <color name="warning">#FFFFC46B</color>
+    <color name="success">#FF6BE3A0</color>
 </resources>

@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
     private TerminalView terminalView;
     private TextView navSubtitle;
     private MaterialButton emptyButton;
+    private com.chimeraant.terminal.view.TabStrip tabStrip;
 
     private SessionManager sessionManager;
     private boolean ctrlLatched;
@@ -60,6 +61,27 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
         terminalView = findViewById(R.id.terminal_view);
         emptyButton = findViewById(R.id.empty_new_sandbox);
         navSubtitle = navigationView.getHeaderView(0).findViewById(R.id.nav_subtitle);
+
+        tabStrip = findViewById(R.id.tab_strip);
+        tabStrip.setListener(new com.chimeraant.terminal.view.TabStrip.Listener() {
+            @Override
+            public void onTabSelected(TerminalSession session) {
+                attachSession(session);
+            }
+
+            @Override
+            public void onTabClosed(TerminalSession session) {
+                sessionManager.closeSession(session);
+                attachSession(sessionManager.getActiveSession());
+                updateEmptyState();
+                updateDrawer();
+            }
+
+            @Override
+            public void onNewTabRequested() {
+                showNewSandboxDialog();
+            }
+        });
 
         terminalView.setInputListener(new TerminalView.InputListener() {
             @Override
@@ -190,6 +212,9 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
         Menu menu = navigationView.getMenu();
         menu.removeGroup(R.id.drawer_sessions_group);
         List<TerminalSession> sessions = sessionManager.getSessions();
+        if (tabStrip != null) {
+            tabStrip.submit(sessions, sessionManager.getActiveSession());
+        }
         for (int i = 0; i < sessions.size(); i++) {
             TerminalSession session = sessions.get(i);
             MenuItem item = menu.add(R.id.drawer_sessions_group, Menu.FIRST + i, i,
@@ -215,6 +240,10 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
             startActivity(new Intent(this, SettingsActivity.class));
         } else if (id == R.id.drawer_root) {
             startActivity(new Intent(this, RootActivity.class));
+        } else if (id == R.id.drawer_debloat) {
+            startActivity(new Intent(this, DebloatActivity.class));
+        } else if (id == R.id.drawer_termux) {
+            startActivity(new Intent(this, TermuxActivity.class));
         } else if (id >= Menu.FIRST) {
             int index = id - Menu.FIRST;
             List<TerminalSession> sessions = sessionManager.getSessions();
@@ -254,6 +283,12 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
             return true;
         } else if (id == R.id.action_root) {
             startActivity(new Intent(this, RootActivity.class));
+            return true;
+        } else if (id == R.id.action_debloat) {
+            startActivity(new Intent(this, DebloatActivity.class));
+            return true;
+        } else if (id == R.id.action_termux) {
+            startActivity(new Intent(this, TermuxActivity.class));
             return true;
         } else if (id == R.id.action_settings) {
             startActivity(new Intent(this, SettingsActivity.class));

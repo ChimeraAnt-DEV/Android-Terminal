@@ -29,6 +29,14 @@
         android:title="@string/menu_root"
         android:showAsAction="never" />
     <item
+        android:id="@+id/action_debloat"
+        android:title="@string/debloat_title"
+        android:showAsAction="never" />
+    <item
+        android:id="@+id/action_termux"
+        android:title="@string/termux_title"
+        android:showAsAction="never" />
+    <item
         android:id="@+id/action_settings"
         android:title="@string/menu_settings"
         android:showAsAction="never" />

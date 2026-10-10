@@ -42,17 +42,22 @@ public class TerminalView extends View {
         void onRequestKeyboard();
     }
 
+    /** Icy ANSI palette: cool blues and frost tones rather than the usual green. */
     private static final int[] DEFAULT_PALETTE = {
-            0xFF1C1C1C, 0xFFD75F5F, 0xFF87AF5F, 0xFFD7AF5F,
-            0xFF5F87AF, 0xFFAF5FAF, 0xFF5FAFAF, 0xFFC0C0C0,
-            0xFF5C5C5C, 0xFFE08080, 0xFFA8C88A, 0xFFE8C87A,
-            0xFF87AFD7, 0xFFD7A8D7, 0xFF8AD7D7, 0xFFFFFFFF
+            0xFF0B1119, 0xFFFF6B6B, 0xFF6BE3A0, 0xFFFFC46B,
+            0xFF5AA9E6, 0xFFB08CE8, 0xFF5FD6D6, 0xFFC6D6E6,
+            0xFF5A6B80, 0xFFFF8F8F, 0xFF8FF0BC, 0xFFFFD48F,
+            0xFF7FD4FF, 0xFFC9A8FF, 0xFF8AE8E8, 0xFFF2F8FF
     };
 
-    private int foreground = 0xFFDCDCDC;
-    private int background = 0xFF101014;
-    private int cursorColor = 0xFFA8C88A;
+    private int foreground = 0xFFD8E8F6;
+    private int background = 0xFF070B12;
+    private int cursorColor = 0xFF7FD4FF;
     private int[] palette = DEFAULT_PALETTE.clone();
+    private Typeface regularTypeface;
+    private Typeface boldTypeface;
+    private Typeface italicTypeface;
+    private Typeface boldItalicTypeface;
 
     private TerminalEmulator emulator;
     private InputListener inputListener;
@@ -102,11 +107,16 @@ public class TerminalView extends View {
         setFocusableInTouchMode(true);
         setBackgroundColor(background);
 
-        textPaint.setTypeface(Typeface.MONOSPACE);
+        regularTypeface = TerminalFonts.mono(context);
+        boldTypeface = TerminalFonts.bold(context);
+        italicTypeface = TerminalFonts.italic(context);
+        boldItalicTypeface = TerminalFonts.boldItalic(context);
+
+        textPaint.setTypeface(regularTypeface);
         textPaint.setTextSize(textSizeSp * getResources().getDisplayMetrics().scaledDensity);
         bgPaint.setStyle(Paint.Style.FILL);
         cursorPaint.setColor(cursorColor);
-        selectionPaint.setColor(0x66A8C88A);
+        selectionPaint.setColor(0x667FD4FF);
 
         cellHeight = textPaint.getFontMetrics().descent - textPaint.getFontMetrics().ascent
                 + textPaint.getFontMetrics().leading + 2f;
@@ -200,7 +210,11 @@ public class TerminalView extends View {
         cellHeight = textPaint.getFontMetrics().descent - textPaint.getFontMetrics().ascent
                 + textPaint.getFontMetrics().leading + 2f;
         fontHeight = textPaint.getFontMetrics().descent - textPaint.getFontMetrics().ascent;
+        // Measure with the regular face so every style shares one cell grid.
+        Typeface previous = textPaint.getTypeface();
+        textPaint.setTypeface(regularTypeface);
         cellWidth = textPaint.measureText("W");
+        textPaint.setTypeface(previous);
         if (emulator != null) {
             updatePtySize();
         }
@@ -449,10 +463,14 @@ public class TerminalView extends View {
                 long style = line.styles[col];
                 if (ch != 0 && ch != 0x200B) {
                     textPaint.setColor(foregroundColorFor(style));
-                    textPaint.setFakeBoldText((style & TerminalEmulator.ATTR_BOLD) != 0);
+                    boolean bold = (style & TerminalEmulator.ATTR_BOLD) != 0;
+                    boolean italic = (style & TerminalEmulator.ATTR_ITALIC) != 0;
+                    // Use the real bold/italic faces instead of faking them.
+                    textPaint.setTypeface(typefaceFor(bold, italic));
+                    textPaint.setFakeBoldText(false);
                     textPaint.setUnderlineText((style & TerminalEmulator.ATTR_UNDERLINE) != 0);
                     textPaint.setStrikeThruText((style & TerminalEmulator.ATTR_STRIKE) != 0);
-                    textPaint.setTextSkewX((style & TerminalEmulator.ATTR_ITALIC) != 0 ? -0.25f : 0f);
+                    textPaint.setTextSkewX(0f);
                     String glyph = new String(Character.toChars(ch));
                     float glyphWidth = textPaint.measureText(glyph);
                     canvas.drawText(glyph, x, top + baselineOffset, textPaint);
@@ -524,6 +542,13 @@ public class TerminalView extends View {
         }
         canvas.drawRect(getPaddingLeft() + fromCol * cellWidth, top,
                 getPaddingLeft() + (toCol + 1) * cellWidth, top + cellHeight, selectionPaint);
+    }
+
+    private Typeface typefaceFor(boolean bold, boolean italic) {
+        if (bold && italic) return boldItalicTypeface;
+        if (bold) return boldTypeface;
+        if (italic) return italicTypeface;
+        return regularTypeface;
     }
 
     private int cellBackground(TerminalEmulator.ScreenLine line, int col) {

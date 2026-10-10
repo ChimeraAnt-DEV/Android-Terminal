@@ -10,4 +10,10 @@
     <item
         android:id="@+id/drawer_root"
         android:title="@string/menu_root" />
+    <item
+        android:id="@+id/drawer_debloat"
+        android:title="@string/debloat_title" />
+    <item
+        android:id="@+id/drawer_termux"
+        android:title="@string/termux_title" />
 </menu>

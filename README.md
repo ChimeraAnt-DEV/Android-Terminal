@@ -16,9 +16,17 @@ does not do by default:
   including a **2021 Amazon Fire tablet (11th generation)** — it installs a
   `proot` userspace Linux rootfs so you still get a root shell and a package
   manager, without pretending the kernel handed you uid 0.
-* **A UI that does not feel like 2012.** Material 3, a drawer with live sandbox
-  status, adjustable font size, true-colour rendering and a Canvas-based
-  renderer that stays smooth on low-end tablets.
+* **A kitty-style interface.** A horizontal tab strip for sandboxes, a compact
+  status line, and an icy dark theme. Rendering is Canvas-based and stays
+  smooth on low-end tablets.
+* **Real Termux commands.** Install the official Termux userland and run
+  `pkg`, `apt`, `bash`, `git`, `python`, `ssh` and everything else from the
+  Termux repository inside a sandbox.
+* **Debloating without a PC.** With Shizuku (ADB-level, startable on-device on
+  Android 11+) or root, disable or remove preinstalled apps exactly like
+  `adb shell pm uninstall --user 0`, with a safety policy that blocks anything
+  that would stop the device booting, and a one-tap restore for everything you
+  changed.
 
 ---
 
@@ -149,6 +157,53 @@ app/src/main/java/.../session/ sandbox manager, environment builder, service
 app/src/main/java/.../root/   device-root detection + proot installer
 app/src/main/java/.../ui/     activities (main, settings, root)
 ```
+
+## Termux userland
+
+Termux binaries are Android-native, but they hardcode their prefix as
+`/data/data/com.termux/files/usr`. That path only exists for the Termux
+package, so Chimera Terminal installs the bootstrap into its own storage and
+launches it through `proot`, binding the real prefix onto the path the binaries
+expect. The result is that `pkg` and `apt` genuinely work and install real
+Termux packages.
+
+Drawer → **Termux userland** → *Install Termux userland*, then *Open a Termux
+sandbox*.
+
+## Debloater
+
+Drawer → **Debloater**.
+
+| Backend | What it can do |
+| --- | --- |
+| Root (`su`) | Disable / uninstall / restore for any package |
+| Shizuku (ADB-level, uid 2000) | Same, no root and no PC on Android 11+ |
+| App only (no elevation) | Listing only |
+
+Every action goes through `pm uninstall -k --user 0` semantics: the system
+partition is untouched, the device still boots, OTAs still work, and anything
+removed can be brought back with **Restore**.
+
+A safety policy classifies every package as Safe, Caution or Protected.
+Protected entries (system UI, settings, launcher, package installer, Fire OS
+OTA and webview, and so on) are blocked outright, because removing them is how
+people brick devices.
+
+## What is not possible
+
+Some things cannot be done from an app on a locked device, and this project
+does not pretend otherwise:
+
+* **Changing kernel driver settings without root.** Drivers live in kernel
+  space; SELinux and the Android permission model block unprivileged access.
+  There is no API for it. With real root you can write to `/sys`, and the
+  terminal supports that path, but on a locked unrooted device it is not
+  achievable by any app.
+* **Unlocking a locked bootloader from userspace.** That is a firmware-level
+  operation.
+* **True system-partition removal without root.** `--user 0` uninstall removes
+  the app for the user, which is what the ADB workflow does; the APK remains in
+  the system image until a factory reset.
 
 ## Security notes
 

@@ -34,11 +34,30 @@ Toolchain versions are pinned in `app/build.gradle.kts`:
 ```
 app/src/main/cpp/pty_bridge.cpp     native forkpty + read/write/winsize/signals
 app/src/main/java/.../core/         PtyProcess (JNI) and TerminalEmulator (VT parser)
-app/src/main/java/.../view/         TerminalView (Canvas), TerminalInputConnection, ChimeraKeyboard (IME)
+app/src/main/java/.../view/         TerminalView (Canvas), TabStrip, TerminalFonts,
+                                    TerminalInputConnection, ChimeraKeyboard (IME)
 app/src/main/java/.../session/      TerminalSession, SessionManager, EnvironmentBuilder, TerminalService
 app/src/main/java/.../root/         RootManager (su detection), ProotInstaller (userspace root)
-app/src/main/java/.../ui/           MainActivity, SettingsActivity, RootActivity
+app/src/main/java/.../termux/       TermuxBootstrapInstaller (official Termux userland)
+app/src/main/java/.../debloat/      DebloatEngine, DebloatSafety, DebloatHistory,
+                                    CommandRunner + Root/Local/Shizuku runners, ShizukuBridge
+app/src/main/java/.../ui/           MainActivity, SettingsActivity, RootActivity,
+                                    DebloatActivity, TermuxActivity
+app/src/main/assets/fonts/          JetBrains Mono (OFL) faces used by the terminal
 ```
+
+## Hard constraints
+* The terminal font is bundled in `assets/fonts`. Keep the OFL licence file
+  alongside it if the font is ever changed.
+* `DebloatSafety` is a safety boundary. Never add a package to the allow path
+  that would stop a device booting. Protected packages must stay blocked.
+* Privilege backends must report real capability. Do not make an unavailable
+  backend appear to succeed; `isAvailable()` and `unavailableReason()` exist so
+  the UI can tell the truth.
+* Termux binaries hardcode `/data/data/com.termux/files/usr`. Any change to the
+  Termux launch path must keep the proot bind of that prefix intact.
+* Changing kernel driver settings on a locked device is not implementable from
+  an app. Do not add fake controls for it.
 
 ## Conventions
 * Java 17, four-space indent, 100-column soft limit.
