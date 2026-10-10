@@ -39,10 +39,22 @@ public class BotExplainerView extends View {
     private String shownText = "";
 
     private float bob = 0f;
+    private float wave = 0f;
+    private boolean waving = false;
     private ValueAnimator bobAnimator;
     private ValueAnimator typingAnimator;
+    private ValueAnimator waveAnimator;
     private boolean caretOn = true;
     private ValueAnimator caretAnimator;
+
+    /** How long the finished message stays before it waves goodbye. */
+    private static final long HOLD_MS = 2600L;
+    private static final long WAVE_MS = 1100L;
+    private static final long FADE_MS = 420L;
+
+    private final android.os.Handler handler =
+            new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable exitRunnable = this::startWaveThenFade;
 
     private final float density;
 
@@ -94,8 +106,16 @@ public class BotExplainerView extends View {
         boolean sameContent = newTitle.equals(title) && newText.equals(fullText);
         title = newTitle;
         fullText = newText;
+        // A new explanation cancels any goodbye in progress.
+        handler.removeCallbacks(exitRunnable);
+        cancelExitAnimation();
+        if (getAlpha() < 1f) {
+            animate().cancel();
+            setAlpha(1f);
+        }
         if (sameContent) {
             setVisibility(VISIBLE);
+            scheduleExit();
             return;
         }
         setVisibility(VISIBLE);
@@ -103,8 +123,58 @@ public class BotExplainerView extends View {
     }
 
     public void hide() {
+        handler.removeCallbacks(exitRunnable);
+        cancelExitAnimation();
         setVisibility(GONE);
         stopAnimators();
+    }
+
+    /** Wait a moment, then wave and fade away so the screen is left clear. */
+    private void scheduleExit() {
+        handler.removeCallbacks(exitRunnable);
+        handler.postDelayed(exitRunnable, HOLD_MS);
+    }
+
+    private void startWaveThenFade() {
+        if (getVisibility() != VISIBLE) return;
+        waving = true;
+        waveAnimator = ValueAnimator.ofFloat(0f, (float) (Math.PI * 4));
+        waveAnimator.setDuration(WAVE_MS);
+        waveAnimator.setInterpolator(new LinearInterpolator());
+        waveAnimator.addUpdateListener(a -> {
+            wave = (float) Math.sin((float) a.getAnimatedValue());
+            invalidate();
+        });
+        waveAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                fadeOut();
+            }
+        });
+        waveAnimator.start();
+    }
+
+    private void fadeOut() {
+        animate()
+                .alpha(0f)
+                .setDuration(FADE_MS)
+                .withEndAction(() -> {
+                    setVisibility(GONE);
+                    setAlpha(1f);
+                    waving = false;
+                    wave = 0f;
+                    invalidate();
+                })
+                .start();
+    }
+
+    private void cancelExitAnimation() {
+        waving = false;
+        wave = 0f;
+        if (waveAnimator != null) {
+            waveAnimator.cancel();
+            waveAnimator = null;
+        }
     }
 
     private void startTyping() {
@@ -119,6 +189,13 @@ public class BotExplainerView extends View {
             if (count > fullText.length()) count = fullText.length();
             shownText = fullText.substring(0, count);
             invalidate();
+        });
+        typingAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                // Text finished; let the user read it before saying goodbye.
+                scheduleExit();
+            }
         });
         typingAnimator.start();
         ensureCaretAnimation();
@@ -165,6 +242,7 @@ public class BotExplainerView extends View {
 
     private void stopAnimators() {
         stopTyping();
+        cancelExitAnimation();
         if (bobAnimator != null) {
             bobAnimator.cancel();
             bobAnimator = null;
@@ -215,11 +293,16 @@ public class BotExplainerView extends View {
         canvas.drawPath(panelPath, panelPaint);
         canvas.drawPath(panelPath, borderPaint);
 
-        // Head: a rounded box that bobs up and down, with two eyes.
+        // Head: a rounded box that bobs up and down, with two eyes. While
+        // saying goodbye it also tilts with the wave.
         float headSize = dp(26f);
         float headLeft = dp(10f);
         float headTop = dp(10f) + bob * dp(2f);
         RectF head = new RectF(headLeft, headTop, headLeft + headSize, headTop + headSize);
+        if (waving) {
+            canvas.save();
+            canvas.rotate(wave * 9f, head.centerX(), head.centerY());
+        }
         canvas.drawRoundRect(head, dp(8f), dp(8f), botPaint);
 
         // Antenna, which also sways with the bob.
@@ -230,11 +313,24 @@ public class BotExplainerView extends View {
         canvas.drawLine(antennaBaseX, antennaBaseY, antennaTipX, antennaTipY, botPaint);
         canvas.drawCircle(antennaTipX, antennaTipY, dp(2f), botPaint);
 
+        // While waving, a small arm swings to make the wave readable.
+        if (waving) {
+            float armX = head.right - dp(2f);
+            float armY = head.centerY() + dp(2f);
+            float waveX = armX + dp(9f);
+            float waveY = armY - dp(6f) + wave * dp(6f);
+            canvas.drawLine(armX, armY, waveX, waveY, botPaint);
+            canvas.drawCircle(waveX, waveY, dp(2.4f), botPaint);
+        }
+
         // Eyes blink when the bob crosses zero.
         float eyeRadius = dp(2.6f);
         float eyeY = head.centerY() - bob * dp(1f);
         canvas.drawCircle(head.centerX() - dp(5f), eyeY, eyeRadius, eyePaint);
         canvas.drawCircle(head.centerX() + dp(5f), eyeY, eyeRadius, eyePaint);
+        if (waving) {
+            canvas.restore();
+        }
 
         // Text area.
         float textLeft = dp(44f);

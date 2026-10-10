@@ -56,13 +56,17 @@
                 android:layout_gravity="top|end"
                 android:layout_margin="10dp"
                 android:visibility="gone" />
-        </FrameLayout>
 
-        <com.chimeraant.terminal.view.SuggestionView
-            android:id="@+id/suggestion_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="gone" />
+            <!-- Positioned by top margin so it sits above the cursor line. -->
+            <com.chimeraant.terminal.view.SuggestionView
+                android:id="@+id/suggestion_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="14dp"
+                android:visibility="gone" />
+        </FrameLayout>
 
         <LinearLayout
             android:id="@+id/extra_keys"
@@ -93,6 +97,17 @@
                 android:layout_weight="1"
                 android:minWidth="0dp"
                 android:text="@string/extra_ctrl"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/key_clear"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:contentDescription="@string/extra_clear_desc"
+                android:minWidth="0dp"
+                android:text="@string/extra_clear"
                 android:textSize="12sp" />
 
             <com.google.android.material.button.MaterialButton

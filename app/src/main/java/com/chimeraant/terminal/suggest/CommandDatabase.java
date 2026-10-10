@@ -148,6 +148,76 @@ public final class CommandDatabase {
         return matches;
     }
 
+    /**
+     * A complete, ready-to-run form of each command that needs arguments.
+     * Picking a suggestion inserts this rather than the bare name, so the user
+     * can see what to type next.
+     */
+    private static final java.util.Map<String, String> USAGE = new java.util.HashMap<>();
+
+    static {
+        USAGE.put("pm", "pm list packages");
+        USAGE.put("am", "am start -n <package>/<activity>");
+        USAGE.put("dumpsys", "dumpsys battery");
+        USAGE.put("settings", "settings get global <name>");
+        USAGE.put("cmd", "cmd wifi status");
+        USAGE.put("input", "input keyevent <code>");
+        USAGE.put("screencap", "screencap -p <file.png>");
+        USAGE.put("screenrecord", "screenrecord <file.mp4>");
+        USAGE.put("getprop", "getprop ro.build.version.release");
+        USAGE.put("setprop", "setprop <name> <value>");
+        USAGE.put("logcat", "logcat -d");
+        USAGE.put("svc", "svc wifi enable");
+        USAGE.put("wm", "wm size");
+        USAGE.put("cd", "cd <folder>");
+        USAGE.put("ls", "ls <folder>");
+        USAGE.put("cat", "cat <file>");
+        USAGE.put("echo", "echo <text>");
+        USAGE.put("mkdir", "mkdir <folder>");
+        USAGE.put("rm", "rm <file>");
+        USAGE.put("cp", "cp <from> <to>");
+        USAGE.put("mv", "mv <from> <to>");
+        USAGE.put("touch", "touch <file>");
+        USAGE.put("chmod", "chmod 755 <file>");
+        USAGE.put("grep", "grep <pattern> <file>");
+        USAGE.put("head", "head <file>");
+        USAGE.put("tail", "tail <file>");
+        USAGE.put("wc", "wc -l <file>");
+        USAGE.put("sed", "sed s/<old>/<new>/ <file>");
+        USAGE.put("awk", "awk {print $1} <file>");
+        USAGE.put("pkg", "pkg install <package>");
+        USAGE.put("apt", "apt install <package>");
+        USAGE.put("apt-get", "apt-get install <package>");
+        USAGE.put("python", "python <script.py>");
+        USAGE.put("node", "node <script.js>");
+        USAGE.put("git", "git clone <url>");
+        USAGE.put("ssh", "ssh <user>@<host>");
+        USAGE.put("scp", "scp <file> <user>@<host>:<path>");
+        USAGE.put("curl", "curl <url>");
+        USAGE.put("wget", "wget <url>");
+        USAGE.put("ping", "ping <host>");
+        USAGE.put("ip", "ip addr");
+        USAGE.put("nmap", "nmap <host>");
+        USAGE.put("tar", "tar -xzf <file.tar.gz>");
+        USAGE.put("unzip", "unzip <file.zip>");
+        USAGE.put("zip", "zip <out.zip> <file>");
+        USAGE.put("vi", "vi <file>");
+        USAGE.put("nano", "nano <file>");
+        USAGE.put("less", "less <file>");
+        USAGE.put("man", "man <command>");
+    }
+
+    /**
+     * The full command line to insert when a suggestion is picked. Commands
+     * that take arguments come back with a placeholder, so the user is told
+     * what to type next instead of being left at a bare name.
+     */
+    public static String completionFor(String name) {
+        if (name == null) return "";
+        String usage = USAGE.get(name);
+        return usage != null ? usage : name;
+    }
+
     /** Look up a single command by exact name. */
     public static Command find(String name) {
         if (name == null) return null;

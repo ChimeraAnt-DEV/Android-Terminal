@@ -214,6 +214,26 @@ public class TerminalView extends View {
         return emulator;
     }
 
+    /** Height of one character row, in pixels. */
+    public float getCellHeight() {
+        return cellHeight;
+    }
+
+    public float getCellWidth() {
+        return cellWidth;
+    }
+
+    /**
+     * Where the text cursor sits inside this view, in pixels from the top.
+     * Returns -1 when there is no live cursor. The suggestion dropdown uses
+     * this to sit just above the line being edited.
+     */
+    public float getCursorBottomY() {
+        if (emulator == null) return -1f;
+        if (scrollOffset != 0) return -1f;
+        return getPaddingTop() + (emulator.getCursorRow() + 1) * cellHeight;
+    }
+
     public void setInputListener(InputListener listener) {
         this.inputListener = listener;
     }

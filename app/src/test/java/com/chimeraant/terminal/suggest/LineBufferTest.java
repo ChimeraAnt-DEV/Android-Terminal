@@ -87,4 +87,29 @@ public class LineBufferTest {
     public void helpIsInTheCatalogue() {
         assertTrue(CommandDatabase.find("help") != null);
     }
+
+    @Test
+    public void pickingACommandGivesAUsableLine() {
+        // A command that needs arguments must come back complete, so the user
+        // is shown what to type next instead of a bare name.
+        assertEquals("pm list packages", CommandDatabase.completionFor("pm"));
+        assertEquals("pkg install <package>", CommandDatabase.completionFor("pkg"));
+        // A command that takes nothing is returned unchanged.
+        assertEquals("help", CommandDatabase.completionFor("help"));
+        assertEquals("pwd", CommandDatabase.completionFor("pwd"));
+    }
+
+    @Test
+    public void everyCompletionStartsWithItsCommand() {
+        for (CommandDatabase.Command command : CommandDatabase.all()) {
+            String completion = CommandDatabase.completionFor(command.name);
+            assertTrue("completion for " + command.name + " was " + completion,
+                    completion.startsWith(command.name));
+        }
+    }
+
+    @Test
+    public void unknownCommandFallsBackToItsName() {
+        assertEquals("notacommand", CommandDatabase.completionFor("notacommand"));
+    }
 }

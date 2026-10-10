@@ -30,6 +30,8 @@
     <string name="extra_esc">ESC</string>
     <string name="extra_tab">TAB</string>
     <string name="extra_enter">ENTER</string>
+    <string name="extra_clear">CLR</string>
+    <string name="extra_clear_desc">Clear the whole line you have typed</string>
     <string name="keyboard_notice">This app never replaces your keyboard automatically. Enable Chimera Terminal Keyboard only if you want its shell keys, or keep your own keyboard - both work.</string>
     <string name="settings_font_size">Font size</string>
     <string name="settings_keep_screen_on">Keep screen on</string>

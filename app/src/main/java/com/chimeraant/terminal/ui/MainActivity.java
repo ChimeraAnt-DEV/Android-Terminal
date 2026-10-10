@@ -7,6 +7,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.content.Context;
@@ -103,6 +104,16 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
             }
         });
 
+        // Re-anchor when the terminal changes size, which happens when the
+        // soft keyboard opens or closes.
+        terminalView.addOnLayoutChangeListener((v, left, top, right, bottom,
+                                               oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (suggestionView != null
+                    && suggestionView.getVisibility() == View.VISIBLE) {
+                suggestionView.post(this::anchorSuggestionsAboveCursor);
+            }
+        });
+
         terminalView.setInputListener(new TerminalView.InputListener() {
             @Override
             public void onWrite(byte[] data) {
@@ -186,6 +197,7 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
             highlightModifier(R.id.key_alt, altLatched);
             highlightModifier(R.id.key_ctrl, false);
         });
+        findViewById(R.id.key_clear).setOnClickListener(v -> clearLine());
         findViewById(R.id.key_toggle_ime).setOnClickListener(v -> switchKeyboard());
     }
 
@@ -382,6 +394,8 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
             return;
         }
         suggestionView.update(word);
+        // Anchor after layout so the measured height is known.
+        suggestionView.post(this::anchorSuggestionsAboveCursor);
         // Keep the bot in sync with the leading command on the line.
         String line = lineBuffer.currentLine().trim();
         if (!line.isEmpty()) {
@@ -394,18 +408,74 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
         }
     }
 
-    /** Replace the word being typed with the chosen command. */
-    private void insertSuggestion(String command) {
+    /**
+     * Replace the whole line with the chosen command, so the user gets the
+     * full command with its arguments rather than a bare word.
+     */
+    private void insertSuggestion(String completion) {
         String line = lineBuffer.currentLine();
-        String word = lineBuffer.currentWord();
-        StringBuilder replacement = new StringBuilder();
-        for (int i = 0; i < word.length(); i++) {
-            replacement.append('\u007F');
+        if (!line.trim().isEmpty()) {
+            // Ctrl+U tells the shell to erase the line it is holding. That
+            // covers words typed before an arrow key moved the cursor, which a
+            // plain run of backspaces would not.
+            sendAndTrack("\u0015");
         }
-        replacement.append(command).append(' ');
-        sendAndTrack(replacement.toString());
+        sendAndTrack(completion);
         suggestionView.hide();
+        botExplainer.explain(completion.split("\\s+")[0],
+                explanationFor(completion.split("\\s+")[0]));
         hideKeyboard();
+    }
+
+    private String explanationFor(String commandName) {
+        com.chimeraant.terminal.suggest.CommandDatabase.Command command =
+                com.chimeraant.terminal.suggest.CommandDatabase.find(commandName);
+        return command == null ? "" : command.summary;
+    }
+
+    /**
+     * Sit the dropdown just above the line the user is typing on, instead of
+     * always pinning it to the bottom of the screen. When the cursor is near
+     * the top there is no room above it, so the list drops below the line.
+     */
+    private void anchorSuggestionsAboveCursor() {
+        if (suggestionView == null || suggestionView.getVisibility() != View.VISIBLE) {
+            return;
+        }
+        float cursorBottom = terminalView.getCursorBottomY();
+        if (cursorBottom < 0f) {
+            return;
+        }
+        View parent = (View) suggestionView.getParent();
+        if (parent == null) return;
+        int available = parent.getHeight();
+        int listHeight = suggestionView.getMeasuredHeight();
+        int gap = Math.round(4 * getResources().getDisplayMetrics().density);
+
+        float wanted = cursorBottom - listHeight - gap;
+        // Not enough room above? Put it under the cursor line instead.
+        if (wanted < 0f) {
+            wanted = cursorBottom + gap;
+        }
+        wanted = Math.max(0f, Math.min(wanted, Math.max(0, available - listHeight)));
+
+        if (suggestionView.getLayoutParams() instanceof android.widget.FrameLayout.LayoutParams) {
+            android.widget.FrameLayout.LayoutParams params =
+                    (android.widget.FrameLayout.LayoutParams) suggestionView.getLayoutParams();
+            params.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
+            params.topMargin = Math.round(wanted);
+            suggestionView.setLayoutParams(params);
+        }
+    }
+
+    /** Wipe everything the user has typed on the current line. */
+    private void clearLine() {
+        if (lineBuffer.currentLine().isEmpty()) {
+            return;
+        }
+        sendAndTrack("\u0015");
+        suggestionView.hide();
+        botExplainer.hide();
     }
 
     private void hideKeyboard() {
