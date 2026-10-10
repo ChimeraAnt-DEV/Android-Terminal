@@ -23,6 +23,7 @@ import com.chimeraant.terminal.debloat.DebloatSafety;
 import com.chimeraant.terminal.debloat.LocalCommandRunner;
 import com.chimeraant.terminal.debloat.RootCommandRunner;
 import com.chimeraant.terminal.debloat.ShizukuBridge;
+import com.chimeraant.terminal.debloat.SystemAppActions;
 import com.chimeraant.terminal.session.SessionManager;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
@@ -143,6 +144,17 @@ public class DebloatActivity extends AppCompatActivity {
         }
     }
 
+    /** Explain every way to gain the access debloating needs. */
+    private void showEnableOptions() {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.debloat_how_to_enable)
+                .setMessage(R.string.debloat_enable_body)
+                .setPositiveButton(R.string.debloat_open_system_app,
+                        (d, w) -> SystemAppActions.openAppList(this))
+                .setNeutralButton(android.R.string.cancel, null)
+                .show();
+    }
+
     private void confirmAction(String action, String packageName) {
         DebloatSafety.Risk risk = DebloatSafety.classify(packageName);
         if (risk == DebloatSafety.Risk.CRITICAL) {
@@ -165,7 +177,41 @@ public class DebloatActivity extends AppCompatActivity {
                 .show();
     }
 
+    /**
+     * No privilege backend: take the user to the system screen for the app.
+     * Android will not let this app disable or remove a package itself, so the
+     * honest option is to open the exact screen where the user can do it.
+     */
+    private void openSystemScreen(String action, String packageName) {
+        boolean opened;
+        if ("Uninstall".equals(action)) {
+            opened = SystemAppActions.openUninstall(this, packageName);
+        } else {
+            opened = SystemAppActions.openAppInfo(this, packageName);
+        }
+        if (!opened) {
+            Toast.makeText(this, R.string.debloat_no_backend, Toast.LENGTH_LONG).show();
+            return;
+        }
+        Toast.makeText(this, R.string.debloat_opened_system, Toast.LENGTH_LONG).show();
+    }
+
     private void perform(String action, String packageName) {
+        // Without Shizuku or root the app cannot act directly. Offer the
+        // system screen instead of failing with an error the user cannot use.
+        if (!runner.isAvailable()) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.debloat_no_backend_title)
+                    .setMessage(getString(R.string.debloat_no_backend_body, packageName))
+                    .setPositiveButton(R.string.debloat_open_system_app,
+                            (d, w) -> openSystemScreen(action, packageName))
+                    .setNeutralButton(R.string.debloat_how_to_enable,
+                            (d, w) -> showEnableOptions())
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+            return;
+        }
+
         DebloatEngine.ProgressListener listener = new DebloatEngine.ProgressListener() {
             @Override
             public void onProgress(String stage, int percent) {

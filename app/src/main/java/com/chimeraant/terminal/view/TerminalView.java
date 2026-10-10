@@ -42,6 +42,10 @@ public class TerminalView extends View {
         void onRequestKeyboard();
     }
 
+    /** Never let the terminal shrink below a usable grid. */
+    private static final int MIN_COLS = 20;
+    private static final int MIN_ROWS = 5;
+
     /** Icy ANSI palette: cool blues and frost tones rather than the usual green. */
     private static final int[] DEFAULT_PALETTE = {
             0xFF0B1119, 0xFFFF6B6B, 0xFF6BE3A0, 0xFFFFC46B,
@@ -62,6 +66,9 @@ public class TerminalView extends View {
     private TerminalEmulator emulator;
     private InputListener inputListener;
 
+    /** Reused for every glyph so drawing allocates nothing per cell. */
+    private final char[] glyphBuffer = new char[1];
+
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint bgPaint = new Paint();
     private final Paint cursorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -70,10 +77,12 @@ public class TerminalView extends View {
     private float cellWidth;
     private float cellHeight;
     private float fontHeight;
+    private float baselineOffset;
     private final float textSizeSp;
 
     private int scrollOffset; // lines scrolled up from the bottom
     private float scrollAccumulator;
+    private boolean renderPosted;
 
     private boolean focused = false;
     private boolean cursorBlinkOn = true;
@@ -118,10 +127,7 @@ public class TerminalView extends View {
         cursorPaint.setColor(cursorColor);
         selectionPaint.setColor(0x667FD4FF);
 
-        cellHeight = textPaint.getFontMetrics().descent - textPaint.getFontMetrics().ascent
-                + textPaint.getFontMetrics().leading + 2f;
-        fontHeight = textPaint.getFontMetrics().descent - textPaint.getFontMetrics().ascent;
-        cellWidth = textPaint.measureText("W");
+        recomputeMetrics();
 
         gestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
             @Override
@@ -185,6 +191,25 @@ public class TerminalView extends View {
         invalidate();
     }
 
+    /**
+     * Ask for a repaint on the next frame.
+     *
+     * Session output arrives in many small chunks. Repainting synchronously for
+     * each one makes typing feel sluggish, so redraws are coalesced: several
+     * chunks that land in the same frame produce a single paint.
+     */
+    public void requestRender() {
+        if (!renderPosted) {
+            renderPosted = true;
+            postOnAnimation(renderRunnable);
+        }
+    }
+
+    private final Runnable renderRunnable = () -> {
+        renderPosted = false;
+        invalidate();
+    };
+
     public TerminalEmulator getEmulator() {
         return emulator;
     }
@@ -207,18 +232,34 @@ public class TerminalView extends View {
 
     public void setFontSize(float sp) {
         textPaint.setTextSize(sp * getResources().getDisplayMetrics().scaledDensity);
-        cellHeight = textPaint.getFontMetrics().descent - textPaint.getFontMetrics().ascent
-                + textPaint.getFontMetrics().leading + 2f;
-        fontHeight = textPaint.getFontMetrics().descent - textPaint.getFontMetrics().ascent;
-        // Measure with the regular face so every style shares one cell grid.
-        Typeface previous = textPaint.getTypeface();
-        textPaint.setTypeface(regularTypeface);
-        cellWidth = textPaint.measureText("W");
-        textPaint.setTypeface(previous);
+        recomputeMetrics();
         if (emulator != null) {
             updatePtySize();
         }
         invalidate();
+    }
+
+    /**
+     * Derive the cell grid once, using the widest of the four faces so no
+     * style can overflow its cell. A monospace family should agree across all
+     * faces; taking the maximum makes that robust when it does not.
+     */
+    private void recomputeMetrics() {
+        Typeface previous = textPaint.getTypeface();
+        float maxAdvance = 0f;
+        for (Typeface face : new Typeface[]{
+                regularTypeface, boldTypeface, italicTypeface, boldItalicTypeface}) {
+            if (face == null) continue;
+            textPaint.setTypeface(face);
+            maxAdvance = Math.max(maxAdvance, textPaint.measureText("W"));
+        }
+        textPaint.setTypeface(previous);
+        cellWidth = maxAdvance > 0f ? (float) Math.ceil(maxAdvance) : 8f;
+
+        Paint.FontMetrics metrics = textPaint.getFontMetrics();
+        cellHeight = (float) Math.ceil(metrics.descent - metrics.ascent + metrics.leading + 2f);
+        fontHeight = metrics.descent - metrics.ascent;
+        baselineOffset = -metrics.ascent;
     }
 
     @Override
@@ -227,20 +268,44 @@ public class TerminalView extends View {
         updatePtySize();
     }
 
+    /** Usable text width, excluding horizontal padding. */
+    private int contentWidth() {
+        return getWidth() - getPaddingLeft() - getPaddingRight();
+    }
+
+    private int contentHeight() {
+        return getHeight() - getPaddingTop() - getPaddingBottom();
+    }
+
+    /**
+     * Columns that fit the current view, or -1 when the view has not been
+     * measured yet. Reporting "unknown" matters: before the first layout the
+     * width is 0, and a naive division would give a tiny value that wraps every
+     * character onto its own line.
+     */
     private int computeCols() {
-        if (cellWidth <= 0) return 80;
-        return Math.max(2, (int) (getWidth() / cellWidth));
+        if (cellWidth <= 0) return -1;
+        int available = contentWidth();
+        if (available <= 0) return -1;
+        int cols = (int) (available / cellWidth);
+        return cols < MIN_COLS ? -1 : cols;
     }
 
     private int computeRows() {
-        if (cellHeight <= 0) return 24;
-        return Math.max(2, (int) ((getHeight() - getPaddingTop() - getPaddingBottom()) / cellHeight));
+        if (cellHeight <= 0) return -1;
+        int available = contentHeight();
+        if (available <= 0) return -1;
+        int rows = (int) (available / cellHeight);
+        return rows < MIN_ROWS ? -1 : rows;
     }
 
     private void updatePtySize() {
         if (emulator == null) return;
         int cols = computeCols();
         int rows = computeRows();
+        // Wait until the view has a real size; resizing to a bogus small grid
+        // is what produced the garbled column of words on first launch.
+        if (cols < 0 || rows < 0) return;
         if (cols != emulator.getCols() || rows != emulator.getRows()) {
             emulator.resize(cols, rows);
             scrollOffset = 0;
@@ -399,9 +464,18 @@ public class TerminalView extends View {
 
     @Override
     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
-        outAttrs.inputType = InputType.TYPE_NULL;
-        outAttrs.imeOptions = EditorInfo.IME_ACTION_NONE | EditorInfo.IME_FLAG_NO_FULLSCREEN
-                | EditorInfo.IME_FLAG_NO_EXTRACT_UI;
+        // TYPE_NULL tells the system "this view takes no text", and most
+        // keyboards then refuse to show at all. A normal text type plus
+        // NO_SUGGESTIONS keeps the keyboard on screen while suppressing the
+        // autocorrect bar, which would otherwise fight with shell input.
+        outAttrs.inputType = InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD;
+        outAttrs.imeOptions = EditorInfo.IME_ACTION_NONE
+                | EditorInfo.IME_FLAG_NO_FULLSCREEN
+                | EditorInfo.IME_FLAG_NO_EXTRACT_UI
+                | EditorInfo.IME_FLAG_NO_ENTER_ACTION;
+        outAttrs.initialCapsMode = 0;
         return new TerminalInputConnection(this, false);
     }
 
@@ -419,9 +493,6 @@ public class TerminalView extends View {
         int rows = emulator.getRows();
         int totalViewRows = rows + emulator.getScrollbackSize();
         int firstVisible = totalViewRows - rows - scrollOffset;
-
-        Paint.FontMetrics fm = textPaint.getFontMetrics();
-        float baselineOffset = -fm.ascent;
 
         for (int screenRow = 0; screenRow < rows; screenRow++) {
             int viewRow = firstVisible + screenRow;
@@ -462,6 +533,7 @@ public class TerminalView extends View {
                 int ch = line.chars[col];
                 long style = line.styles[col];
                 if (ch != 0 && ch != 0x200B) {
+                    glyphBuffer[0] = (char) ch;
                     textPaint.setColor(foregroundColorFor(style));
                     boolean bold = (style & TerminalEmulator.ATTR_BOLD) != 0;
                     boolean italic = (style & TerminalEmulator.ATTR_ITALIC) != 0;
@@ -471,13 +543,17 @@ public class TerminalView extends View {
                     textPaint.setUnderlineText((style & TerminalEmulator.ATTR_UNDERLINE) != 0);
                     textPaint.setStrikeThruText((style & TerminalEmulator.ATTR_STRIKE) != 0);
                     textPaint.setTextSkewX(0f);
-                    String glyph = new String(Character.toChars(ch));
-                    float glyphWidth = textPaint.measureText(glyph);
-                    canvas.drawText(glyph, x, top + baselineOffset, textPaint);
-                    x += cellWidth;
-                    if (glyphWidth > cellWidth) {
-                        x = getPaddingLeft() + (col + 1) * cellWidth;
+                    // Grid is authoritative: every cell is exactly cellWidth
+                    // wide. A glyph wider than its cell is scaled to fit rather
+                    // than allowed to spill and collide with the next one.
+                    textPaint.setTextScaleX(1f);
+                    float advance = textPaint.measureText(glyphBuffer, 0, 1);
+                    if (advance > cellWidth && advance > 0f) {
+                        textPaint.setTextScaleX(cellWidth / advance);
                     }
+                    canvas.drawText(glyphBuffer, 0, 1, x, top + baselineOffset, textPaint);
+                    textPaint.setTextScaleX(1f);
+                    x += cellWidth;
                 } else {
                     x += cellWidth;
                 }

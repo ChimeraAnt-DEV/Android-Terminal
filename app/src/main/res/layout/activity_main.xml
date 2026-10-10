@@ -48,7 +48,21 @@
                 android:layout_gravity="center"
                 android:text="@string/menu_new_session"
                 android:visibility="gone" />
+
+            <com.chimeraant.terminal.view.BotExplainerView
+                android:id="@+id/bot_explainer"
+                android:layout_width="230dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_margin="10dp"
+                android:visibility="gone" />
         </FrameLayout>
+
+        <com.chimeraant.terminal.view.SuggestionView
+            android:id="@+id/suggestion_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
 
         <LinearLayout
             android:id="@+id/extra_keys"

@@ -1,217 +1,194 @@
-# Chimera Terminal
+<p align="center">
+  <img src="docs/icon.svg" alt="Chimera Terminal icon: a frosted prompt with icicles" width="128" height="128">
+</p>
 
-A modern, sandboxed terminal emulator for Android. It does what Termux does —
-real PTYs, a real shell, real escape sequences — and adds the things Termux
-does not do by default:
+<h1 align="center">Chimera Terminal</h1>
 
-* **Your keyboard, your choice.** The app never hijacks the IME. Keep Gboard,
-  SwiftKey, a physical keyboard over USB/Bluetooth, or enable the bundled
-  *Chimera Terminal Keyboard* when you want dedicated shell keys (Ctrl, Alt,
-  Esc, Tab, arrows, function keys). Switching is one tap away.
-* **Isolated sandboxes.** Every session is a separate process on its own
-  pseudo-terminal with its own `HOME`, `PREFIX` and `TMPDIR`. Nothing is
-  shared, so a heavy job in one sandbox cannot slow down or corrupt another.
-* **A root toggle that tells the truth.** On a rooted device it uses your real
-  `su` (Magisk / KernelSU / engineering ROM). On a device without root —
-  including a **2021 Amazon Fire tablet (11th generation)** — it installs a
-  `proot` userspace Linux rootfs so you still get a root shell and a package
-  manager, without pretending the kernel handed you uid 0.
-* **A kitty-style interface.** A horizontal tab strip for sandboxes, a compact
-  status line, and an icy dark theme. Rendering is Canvas-based and stays
-  smooth on low-end tablets.
-* **Real Termux commands.** Install the official Termux userland and run
-  `pkg`, `apt`, `bash`, `git`, `python`, `ssh` and everything else from the
-  Termux repository inside a sandbox.
-* **Debloating without a PC.** With Shizuku (ADB-level, startable on-device on
-  Android 11+) or root, disable or remove preinstalled apps exactly like
-  `adb shell pm uninstall --user 0`, with a safety policy that blocks anything
-  that would stop the device booting, and a one-tap restore for everything you
-  changed.
+<p align="center">
+  <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/ChimeraAnt-DEV/Android-Terminal?label=release&color=7FD4FF" alt="Latest release"></a>
+  <a href="../../releases"><img src="https://img.shields.io/github/downloads/ChimeraAnt-DEV/Android-Terminal/total?label=downloads&color=7FD4FF" alt="Total downloads"></a>
+  <a href="../../commits/main"><img src="https://img.shields.io/github/commit-activity/t/ChimeraAnt-DEV/Android-Terminal?label=commits&color=7FD4FF" alt="Total commits"></a>
+  <a href="../../commits/main"><img src="https://img.shields.io/github/last-commit/ChimeraAnt-DEV/Android-Terminal?label=last%20commit&color=7FD4FF" alt="Last commit"></a>
+  <a href="../../stargazers"><img src="https://img.shields.io/github/stars/ChimeraAnt-DEV/Android-Terminal?label=stars&color=7FD4FF" alt="Stars"></a>
+  <a href="../../actions/workflows/build.yml"><img src="https://img.shields.io/badge/build-passing-6BE3A0" alt="Build status"></a>
+  <img src="https://img.shields.io/badge/android-8.0%2B-7FD4FF" alt="Android 8.0 or newer">
+  <img src="https://img.shields.io/badge/licence-personal%20use-8FA3B8" alt="Licence">
+</p>
 
----
+A terminal for Android that you can actually use without a manual. It runs a
+real shell, keeps each job in its own sandbox, tells you what a command does
+before you run it, and can remove preinstalled apps without a computer.
 
-## What is implemented
+## Get it
 
-### Terminal engine
-| Area | Status |
+Download the build that matches your device from the
+[latest release](../../releases/latest):
+
+| File | Use this for |
 | --- | --- |
-| PTY via `forkpty(3)` in native C++ | yes — `app/src/main/cpp/pty_bridge.cpp` |
-| VT100/xterm escape parser | yes — `TerminalEmulator` |
-| 256-colour and 24-bit true colour (`38;2;r;g;b`) | yes |
-| SGR: bold, dim, italic, underline, blink, reverse, hidden, strike | yes |
-| Cursor movement, erase, insert/delete line and char | yes |
-| Scrolling region (`DECSTBM`) | yes |
-| Alternate screen (`?1049`, `?47`, `?1047`) | yes |
-| Scrollback buffer (5000 lines) | yes |
-| Bracketed paste (`?2004`) | yes |
-| OSC 0/1/2 window title | yes |
-| UTF-8 reassembly and East-Asian wide characters | yes |
-| `DECCKM` application cursor keys, cursor shape `DECSCUSR` | yes |
-| Window resize propagates `SIGWINCH` to the child | yes |
+| `ChimeraTerminal-*-arm64-v8a.apk` | Most phones and tablets made since about 2017, and emulators |
+| `ChimeraTerminal-*-armeabi-v7a.apk` | Older 32-bit devices |
 
-### Input
-* Hardware, USB and Bluetooth keyboards via `onKeyDown` and `InputConnection`.
-* On-screen **extra keys row** (Esc, Ctrl, Alt, Tab, arrows) always available.
-* Optional **Chimera Terminal Keyboard** IME with a full qwerty layout, a
-  symbol page, and latched Ctrl/Alt/Shift.
-* Gestures: drag to scroll back, long-press to select, tap-away to dismiss,
-  menu to copy or paste (bracketed-paste aware).
+If you are unsure, install the arm64 build first. Android will refuse it on a
+32-bit device and tell you, and you can then install the other one.
 
-### Sandboxes
-* Create, switch and close sandboxes from the drawer.
-* Each sandbox has its own filesystem root under `files/sandboxes/<id>/`
-  (`home`, `usr`, `tmp`, `workspace`).
-* `motd`, `.mkshrc` and `.profile` are generated per sandbox.
-* A foreground service keeps sessions alive while the app is in the background.
+## What you get
 
-### Root
-* `RootManager` probes Magisk, KernelSU, `/system/bin/su`, `/sbin/su` and the
-  usual engineering paths, then verifies with `id`.
-* `ProotInstaller` downloads a static `proot` and an Alpine minirootfs and
-  extracts them with a pure-Java tar/gzip extractor (no `tar` binary is needed
-  on the device). The shell then runs as `proot -0`, so the sandbox is uid 0.
-* Amazon Fire devices are detected explicitly and routed to the userspace path,
-  the only one that can work without unlocking the bootloader.
+A real terminal. Every session is a separate process with its own
+pseudo-terminal, its own home folder and its own working directory. A long job
+in one tab cannot slow down another, and closing a tab does not disturb the
+rest.
 
----
+Any keyboard you like. The app never takes over your keyboard. Keep Gboard or
+SwiftType, or use a physical keyboard over USB or Bluetooth. If you want
+dedicated keys for a shell, turn on the built-in Chimera keyboard from the
+drawer.
 
-## Building
+Help while you type. Start typing and a list appears above the keyboard showing
+commands that begin with those letters. Tap one to insert it. Tap the info
+button beside it and a small helper in the corner explains, in plain words,
+what that command does.
 
-Requirements: JDK 17+ (JDK 21 works), Android SDK platform 34, build-tools
-34.0.0, NDK `27.0.12077973`, CMake `3.22.1`.
+The full Termux package set. Install the Termux userland from the drawer and
+`pkg`, `apt`, `bash`, `git`, `python`, `ssh` and thousands of other packages
+work inside a sandbox.
+
+Remove preinstalled apps without a PC. The Debloater lists what is installed,
+marks each app as safe, caution or protected, and can disable or remove apps
+you do not want. Protected system apps are blocked, and you can restore
+anything you change.
+
+A ice-cold look. A frosted loading animation, a kitty-style tab strip, and an
+icy blue theme with a bundled JetBrains Mono font.
+
+## First run
+
+The app shows a short guide the first time you open it. It covers what a
+terminal is, what to type, and where to find the extra features. You can skip
+it and read it later from the drawer.
+
+Your first command:
 
 ```bash
-# one-time: point Gradle at your SDK (git-ignored; CI uses ANDROID_HOME)
+help
+```
+
+That lists every command the sandbox can run. Nothing you type in a normal
+sandbox can harm your device.
+
+## Add real Linux packages
+
+1. Open the drawer and choose Termux userland.
+2. Tap Install Termux userland. The app downloads the official Termux
+   bootstrap, about 23 MB.
+3. Tap Open a Termux sandbox.
+4. Run `pkg update`, then install what you want, for example
+   `pkg install git python openssh`.
+
+Termux programs are built for Android, so they run directly on the device. They
+expect to live at `/data/data/com.termux/files/usr`, a path that belongs to the
+Termux app. Chimera Terminal runs them through proot and maps the sandbox
+folder onto that path, which is why `pkg` and `apt` work.
+
+## Remove preinstalled apps
+
+Open the drawer and choose Debloater. The app tells you which access it has,
+and what that lets it do.
+
+| What you have | What the app can do |
+| --- | --- |
+| Root | Disable, remove and restore any app |
+| Shizuku | The same, with no root and no computer on Android 11 or newer |
+| Neither | List apps, and open the system screen where you can act by hand |
+
+Every removal uses the same rule as `adb shell pm uninstall --user 0`. The
+system files stay untouched, the device still starts, updates still work, and
+everything can be put back with Restore.
+
+Apps that would break the device are marked protected and cannot be removed.
+That list covers the system interface, settings, the launcher, the package
+installer, and the Fire OS launcher and updater.
+
+### Getting Shizuku running without a computer
+
+Shizuku needs an ADB-identity process. On Android 11 or newer you can start it
+on the device itself:
+
+1. Install the Shizuku app.
+2. Turn on Developer options, then Wireless debugging.
+3. Open Shizuku and start it. Choose the wireless debugging pairing option.
+4. Come back to Chimera Terminal, open Debloater and tap Grant Shizuku
+   permission.
+
+## Build it yourself
+
+You need JDK 17 or newer, Android SDK platform 34, build-tools 34.0.0, NDK
+`27.0.12077973` and CMake `3.22.1`.
+
+```bash
 echo "sdk.dir=/path/to/android-sdk" > local.properties
 
-# 64-bit APK (arm64-v8a, plus x86_64 so it also runs on emulators)
-./gradlew :app:assembleArm64Release
-# 32-bit APK (armeabi-v7a)
-./gradlew :app:assembleArm32Release
+./gradlew :app:assembleArm64Release    # 64-bit
+./gradlew :app:assembleArm32Release    # 32-bit
+./gradlew :app:testArm64ReleaseUnitTest
 ```
 
-Outputs:
+The APKs land in `app/build/outputs/apk/arm64/release/` and
+`app/build/outputs/apk/arm32/release/`. Two separate APKs are built on purpose:
+each carries only its own native libraries.
 
-```
-app/build/outputs/apk/arm64/release/app-arm64-release.apk   # 64-bit
-app/build/outputs/apk/arm32/release/app-arm32-release.apk   # 32-bit
-```
+Every push to `main` runs the workflow in `.github/workflows/build.yml`, which
+builds both APKs, runs the tests and publishes a release.
 
-Two separate APKs are produced on purpose: each one bundles only the native
-libraries for its own architecture, so neither carries dead code for the other.
+## What this app cannot do
 
-### CI (GitHub Actions)
+Some things are impossible from an app on a locked device. It is better to say
+so than to ship a button that does nothing.
 
-`.github/workflows/build.yml` builds both APKs on every push to `main`, on any
-`v*` tag, on pull requests and on manual dispatch. It then:
+Change kernel driver settings. Drivers run inside the kernel. Selinux and the
+Android permission model block ordinary apps from writing to them, and no API
+exists for it. With real root you can write to `/sys` yourself, and the
+terminal allows that. On a locked, unrooted device, no app can do it.
 
-* uploads them as a workflow artifact, and
-* attaches them to a **GitHub Release as raw `.apk` files** — `ChimeraTerminal-<version>-arm64-v8a.apk`
-  and `ChimeraTerminal-<version>-armeabi-v7a.apk`. Release assets download as
-  plain APKs; GitHub's own workflow artifacts are always repackaged as `.zip`,
-  so the Release is the place to grab an installable file.
+Unlock a locked bootloader. That is a firmware operation, not something an app
+can perform.
 
-On an untagged push the version is derived from the commit as
-`v1.0.0-<short-sha>`. CI signs with a throwaway key unless you add these
-repository secrets, which keep update signatures stable:
-
-| Secret | Purpose |
-| --- | --- |
-| `RELEASE_KEYSTORE_BASE64` | `base64 -w0 release.jks` |
-| `RELEASE_KEYSTORE_PASSWORD` | keystore password |
-| `RELEASE_KEY_ALIAS` | key alias |
-| `RELEASE_KEY_PASSWORD` | key password |
-
-### Optional release signing
-Create `keystore.properties` in the repository root (git-ignored):
-
-```properties
-storeFile=/absolute/path/to/release.jks
-storePassword=...
-keyAlias=...
-keyPassword=...
-```
-
-## Installing
-
-```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
-## Using root
-
-1. Open the drawer, then **Root**.
-2. Tap **Check device root**. If `su` is present you will be asked to grant it.
-3. On an unrooted device tap **Install / repair userspace root**. This fetches
-   `proot` and Alpine into the app's private storage.
-4. Turn on **Allow root in new sandboxes**, then create a sandbox and enable
-   *Start as root* or *Use proot Linux rootfs*.
+Remove an app from the system partition. `--user 0` removal hides the app for
+your user. The original file stays in the system image until a factory reset.
+Real removal needs root.
 
 ## Project layout
 
 ```
-app/src/main/cpp/             native PTY bridge (forkpty, read/write, SIGWINCH)
-app/src/main/java/.../core/   PTY wrapper + escape-sequence emulator
-app/src/main/java/.../view/   Canvas renderer, input connection, keyboard IME
-app/src/main/java/.../session/ sandbox manager, environment builder, service
-app/src/main/java/.../root/   device-root detection + proot installer
-app/src/main/java/.../ui/     activities (main, settings, root)
+app/src/main/cpp/                 native pseudo-terminal bridge
+app/src/main/java/.../core/       terminal emulator and PTY wrapper
+app/src/main/java/.../view/       renderer, tabs, keyboard, bot helper
+app/src/main/java/.../session/    sandboxes and the environment builder
+app/src/main/java/.../termux/     Termux userland installer
+app/src/main/java/.../debloat/    debloating engine and safety rules
+app/src/main/java/.../suggest/    command list and input tracking
+app/src/main/java/.../ui/         screens
+app/src/main/assets/fonts/        JetBrains Mono, under the OFL licence
 ```
 
-## Termux userland
+## Tests
 
-Termux binaries are Android-native, but they hardcode their prefix as
-`/data/data/com.termux/files/usr`. That path only exists for the Termux
-package, so Chimera Terminal installs the bootstrap into its own storage and
-launches it through `proot`, binding the real prefix onto the path the binaries
-expect. The result is that `pkg` and `apt` genuinely work and install real
-Termux packages.
+25 unit tests cover the emulator, the debloating safety rules, the Termux path
+contract and the typing mirror. Run them with:
 
-Drawer → **Termux userland** → *Install Termux userland*, then *Open a Termux
-sandbox*.
+```bash
+./gradlew :app:testArm64ReleaseUnitTest
+```
 
-## Debloater
+## Credits
 
-Drawer → **Debloater**.
+JetBrains Mono is included under the SIL Open Font Licence. See
+`app/src/main/assets/licenses/JetBrainsMono-OFL.txt`.
 
-| Backend | What it can do |
-| --- | --- |
-| Root (`su`) | Disable / uninstall / restore for any package |
-| Shizuku (ADB-level, uid 2000) | Same, no root and no PC on Android 11+ |
-| App only (no elevation) | Listing only |
+Termux packages are downloaded from the official
+[termux-packages](https://github.com/termux/termux-packages) releases.
 
-Every action goes through `pm uninstall -k --user 0` semantics: the system
-partition is untouched, the device still boots, OTAs still work, and anything
-removed can be brought back with **Restore**.
-
-A safety policy classifies every package as Safe, Caution or Protected.
-Protected entries (system UI, settings, launcher, package installer, Fire OS
-OTA and webview, and so on) are blocked outright, because removing them is how
-people brick devices.
-
-## What is not possible
-
-Some things cannot be done from an app on a locked device, and this project
-does not pretend otherwise:
-
-* **Changing kernel driver settings without root.** Drivers live in kernel
-  space; SELinux and the Android permission model block unprivileged access.
-  There is no API for it. With real root you can write to `/sys`, and the
-  terminal supports that path, but on a locked unrooted device it is not
-  achievable by any app.
-* **Unlocking a locked bootloader from userspace.** That is a firmware-level
-  operation.
-* **True system-partition removal without root.** `--user 0` uninstall removes
-  the app for the user, which is what the ADB workflow does; the APK remains in
-  the system image until a factory reset.
-
-## Security notes
-
-* Sandboxes are app-private directories and are not shared with other apps.
-* The root toggle is opt-in per sandbox and is never enabled silently.
-* `proot` grants a *fake* uid 0 inside a chroot. It does not and cannot give
-  real kernel privileges; that requires a genuinely rooted device.
-* Backups deliberately exclude sandbox data and the proot rootfs.
+Shizuku is by Rikka, at [shizuku.rikka.app](https://shizuku.rikka.app/).
 
 ## Licence
 

@@ -56,19 +56,55 @@ public class EnvironmentBuilder {
         File prefix = getPrefix(sandboxId);
         File tmp = getTmp(sandboxId);
 
+        File bin = new File(prefix, "bin");
         mkdirs(home);
-        mkdirs(new File(prefix, "bin"));
+        mkdirs(bin);
         mkdirs(new File(prefix, "etc"));
         mkdirs(new File(prefix, "lib"));
         mkdirs(new File(prefix, "var/tmp"));
         mkdirs(tmp);
         mkdirs(new File(root, "workspace"));
 
+        // Seed a real, executable command in $PREFIX/bin. This proves the
+        // PATH works and gives new users something that answers.
+        File help = new File(bin, "help");
+        writeIfAbsent(help, HELP_SCRIPT);
+        help.setExecutable(true, false);
+
         writeIfAbsent(new File(home, ".mkshrc"), mkshrc(displayName, prefix));
         writeIfAbsent(new File(home, ".profile"), profile(prefix));
         writeIfAbsent(new File(home, ".bashrc"), profile(prefix));
         writeIfAbsent(new File(root, "motd.txt"), MOTD);
     }
+
+    /** The bundled help command, written to $PREFIX/bin/help. */
+    private static final String HELP_SCRIPT =
+            "#!/system/bin/sh\n"
+            + "cat <<'CHIMERA_HELP'\n"
+            + "\n"
+            + "Chimera Terminal - built-in commands\n"
+            + "\n"
+            + "  help          show this text\n"
+            + "  cd <dir>      change directory\n"
+            + "  pwd           print the current directory\n"
+            + "  ls [dir]      list files\n"
+            + "  cat <file>    print a file\n"
+            + "  echo <text>   print text\n"
+            + "  clear         clear the screen\n"
+            + "  exit          close this sandbox\n"
+            + "\n"
+            + "Android commands also work, for example:\n"
+            + "  getprop                list system properties\n"
+            + "  dumpsys battery        battery details\n"
+            + "  am start -a android.intent.action.VIEW -d https://example.com\n"
+            + "  pm list packages       list installed apps\n"
+            + "  settings get global airplane_mode_on\n"
+            + "\n"
+            + "To install more commands, open the drawer and choose Termux userland.\n"
+            + "That adds pkg and apt, so you can install git, python, ssh and more.\n"
+            + "\n"
+            + "Swipe down on the screen to scroll back. Long press to select text.\n"
+            + "CHIMERA_HELP\n";
 
     /** Build the environment map for {@code PtyProcess.spawn}. */
     public Map<String, String> buildEnvironment(String sandboxId, boolean rootMode) {
@@ -124,17 +160,21 @@ public class EnvironmentBuilder {
     }
 
     private static String profile(File prefix) {
+        // Prepend our bin directory, then the Android system locations, so
+        // commands in $PREFIX/bin are found and system tools still resolve.
         return "# Chimera Terminal profile\n"
-                + "export PATH='" + prefix.getAbsolutePath() + "/bin:/system/bin:/system/xbin:$PATH'\n"
+                + "export PATH=\"" + prefix.getAbsolutePath()
+                + "/bin:/system/bin:/system/xbin:/vendor/bin:/product/bin:$PATH\"\n"
+                + "export PREFIX='" + prefix.getAbsolutePath() + "'\n"
                 + "[ -f \"$HOME/.mkshrc\" ] && . \"$HOME/.mkshrc\"\n";
     }
 
     private static final String MOTD =
-            "\u001B[38;2;168;200;138m"
+            "\u001B[38;2;127;212;255m"
             + "  Chimera Terminal\n"
             + "\u001B[0m"
-            + "  A fast, sandboxed terminal for Android.\n"
-            + "  Type 'help' for built-in hints, 'exit' to close this sandbox.\n";
+            + "  Type help to see what you can run.\n"
+            + "  Type exit to close this sandbox.\n";
 
     private void mkdirs(File dir) throws IOException {
         if (!dir.exists() && !dir.mkdirs()) {

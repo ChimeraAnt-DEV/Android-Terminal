@@ -84,5 +84,20 @@
     <string name="debloat_risk_caution">Caution</string>
     <string name="debloat_risk_critical">Protected</string>
     <string name="debloat_capability_title">What this can and cannot do</string>
-    <string name="debloat_capability_body">With Shizuku or root this removes apps for user 0, exactly like "adb shell pm uninstall --user 0". The system partition is untouched, so the device still boots and OTAs still work, and every action can be restored. Changing kernel driver settings is not possible from an app on a locked device: drivers live in the kernel and SELinux blocks unprivileged access. That is a platform limit, not a missing feature.</string>
+    <string name="debloat_capability_body">With Shizuku or root this removes apps for user 0, exactly like adb shell pm uninstall --user 0. The system partition is untouched, so the device still boots, updates still work, and every action can be restored. With neither, the app opens the system screen so you can disable or remove the app yourself.</string>
+    <string name="debloat_no_backend_title">Direct removal needs extra access</string>
+    <string name="debloat_no_backend_body">Android does not let an ordinary app disable or remove another app, so this app cannot do it directly for %1$s. You have two options.\n\nOpen the system screen for this app, where you can force stop it, disable it or remove updates.\n\nOr read how to turn on direct removal, which needs no PC on Android 11 or newer.</string>
+    <string name="debloat_open_system_app">Open system screen</string>
+    <string name="debloat_how_to_enable">How to turn on direct removal</string>
+    <string name="debloat_opened_system">Opened the system screen for this app.</string>
+    <string name="debloat_enable_body">Direct removal needs the same access a computer would use over USB. You have three ways to get it, and none of them needs a PC on Android 11 or newer.\n\n1. Root. If your device is rooted, this app uses su automatically.\n\n2. Shizuku. Install the Shizuku app, open Developer options, turn on Wireless debugging, then start Shizuku from inside the Shizuku app. Come back here and tap Grant. This runs an ADB-identity process on the device itself.\n\n3. The system screens. Open App info for any app and disable or uninstall it by hand. This always works and needs no extra app.\n\nThe app tells you which of these is active at the top of this screen.</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Welcome to Chimera Terminal</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_start">Start using it</string>
+
+    <!-- Suggestion bar -->
+    <string name="suggestions_label">Commands</string>
 </resources>

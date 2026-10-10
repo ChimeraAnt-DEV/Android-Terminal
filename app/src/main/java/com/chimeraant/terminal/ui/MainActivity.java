@@ -43,6 +43,12 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
     private SessionManager sessionManager;
     private boolean ctrlLatched;
     private boolean altLatched;
+    private int lastSessionCount = -1;
+
+    private com.chimeraant.terminal.view.SuggestionView suggestionView;
+    private com.chimeraant.terminal.view.BotExplainerView botExplainer;
+    private final com.chimeraant.terminal.suggest.LineBuffer lineBuffer =
+            new com.chimeraant.terminal.suggest.LineBuffer();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,11 +89,28 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
             }
         });
 
+        suggestionView = findViewById(R.id.suggestion_view);
+        botExplainer = findViewById(R.id.bot_explainer);
+        suggestionView.setListener(new com.chimeraant.terminal.view.SuggestionView.Listener() {
+            @Override
+            public void onCommandChosen(String command) {
+                insertSuggestion(command);
+            }
+
+            @Override
+            public void onExplainRequested(String command, String summary) {
+                botExplainer.explain(command, summary);
+            }
+        });
+
         terminalView.setInputListener(new TerminalView.InputListener() {
             @Override
             public void onWrite(byte[] data) {
                 TerminalSession session = sessionManager.getActiveSession();
                 if (session != null) session.write(data);
+                // Mirror what we sent so the dropdown knows the current word.
+                lineBuffer.accept(data);
+                refreshSuggestions();
             }
 
             @Override
@@ -194,6 +217,8 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
         sessionManager.setActiveSession(session);
         terminalView.setEmulator(session.getEmulator());
         terminalView.scrollToBottom();
+        lineBuffer.reset();
+        if (suggestionView != null) suggestionView.hide();
         updateToolbarTitle(session);
         updateDrawer();
     }
@@ -347,6 +372,59 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
         terminalView.scrollToBottom();
     }
 
+    /** Refresh the dropdown for the word being typed. */
+    private void refreshSuggestions() {
+        if (suggestionView == null) return;
+        String word = lineBuffer.currentWord();
+        // Only suggest while the user is typing a command name, not arguments.
+        if (!lineBuffer.atCommandStart() && word.isEmpty()) {
+            suggestionView.hide();
+            return;
+        }
+        suggestionView.update(word);
+        // Keep the bot in sync with the leading command on the line.
+        String line = lineBuffer.currentLine().trim();
+        if (!line.isEmpty()) {
+            String firstWord = line.split("\\s+")[0];
+            com.chimeraant.terminal.suggest.CommandDatabase.Command known =
+                    com.chimeraant.terminal.suggest.CommandDatabase.find(firstWord);
+            if (known != null && known.name.equals(word)) {
+                botExplainer.explain(known.name, known.summary);
+            }
+        }
+    }
+
+    /** Replace the word being typed with the chosen command. */
+    private void insertSuggestion(String command) {
+        String line = lineBuffer.currentLine();
+        String word = lineBuffer.currentWord();
+        StringBuilder replacement = new StringBuilder();
+        for (int i = 0; i < word.length(); i++) {
+            replacement.append('\u007F');
+        }
+        replacement.append(command).append(' ');
+        sendAndTrack(replacement.toString());
+        suggestionView.hide();
+        hideKeyboard();
+    }
+
+    private void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(terminalView.getWindowToken(), 0);
+        }
+    }
+
+    /** Send text to the shell and keep the mirror in step. */
+    private void sendAndTrack(String text) {
+        TerminalSession session = sessionManager.getActiveSession();
+        if (session == null) return;
+        byte[] data = text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        session.write(data);
+        lineBuffer.accept(data);
+        terminalView.scrollToBottom();
+    }
+
     private void showKeyboard() {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) {
@@ -389,8 +467,20 @@ public class MainActivity extends AppCompatActivity implements SessionManager.Ob
 
     @Override
     public void onSessionsChanged() {
-        updateDrawer();
-        updateToolbarTitle(sessionManager.getActiveSession());
+        // Session output changed, or a session was added or removed. Repaint
+        // the visible terminal so new output appears immediately; rebuild the
+        // drawer only when the session list itself changed.
+        if (terminalView != null) {
+            TerminalSession active = sessionManager.getActiveSession();
+            if (active != null && terminalView.getEmulator() == active.getEmulator()) {
+                terminalView.requestRender();
+            }
+        }
+        if (sessionManager.getSessionCount() != lastSessionCount) {
+            lastSessionCount = sessionManager.getSessionCount();
+            updateDrawer();
+            updateToolbarTitle(sessionManager.getActiveSession());
+        }
     }
 
     @Override

@@ -28,17 +28,27 @@
         tools:targetApi="34">
 
         <activity
-            android:name=".ui.MainActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|density"
+            android:name=".ui.LauncherActivity"
             android:exported="true"
-            android:launchMode="singleTask"
-            android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.ChimeraTerminal">
+            android:theme="@style/Theme.ChimeraTerminal.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ui.OnboardingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ChimeraTerminal" />
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|density"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.ChimeraTerminal" />
 
         <activity
             android:name=".ui.SettingsActivity"

@@ -46,6 +46,11 @@ app/src/main/java/.../ui/           MainActivity, SettingsActivity, RootActivity
 app/src/main/assets/fonts/          JetBrains Mono (OFL) faces used by the terminal
 ```
 
+## Entry points
+The launcher activity is `LauncherActivity`, which shows the frosty splash and
+then routes to `OnboardingActivity` on first run or `MainActivity` afterwards.
+Do not put the launcher intent filter back on `MainActivity`.
+
 ## Hard constraints
 * The terminal font is bundled in `assets/fonts`. Keep the OFL licence file
   alongside it if the font is ever changed.
@@ -58,6 +63,14 @@ app/src/main/assets/fonts/          JetBrains Mono (OFL) faces used by the termi
   Termux launch path must keep the proot bind of that prefix intact.
 * Changing kernel driver settings on a locked device is not implementable from
   an app. Do not add fake controls for it.
+* The terminal grid must never be resized to a tiny value. `computeCols` and
+  `computeRows` return -1 until the view is measured, and `updatePtySize`
+  ignores that. Resizing to 2 columns wraps every character onto its own line
+  and was the cause of a launch-time garbling bug.
+* Session output must repaint through `TerminalView.requestRender`, which
+  coalesces redraws. Repainting per write makes typing feel slow.
+* `TerminalView.onCreateInputConnection` must return a real text input type.
+  `TYPE_NULL` makes most keyboards refuse to appear.
 
 ## Conventions
 * Java 17, four-space indent, 100-column soft limit.
